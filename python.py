@@ -14,7 +14,8 @@ def calculate_age(born):
     # Đảm bảo 'born' là đối tượng date thuần túy
     try:
         if not isinstance(born, date):
-            born = born.to_pydatetime().date()
+            # Nếu là Timestamp, chuyển sang datetime.date
+            born = born.to_pydatetime().date() 
     except:
         # Xử lý trường hợp không thể chuyển đổi thành date (dữ liệu lỗi)
         return None 
@@ -59,12 +60,12 @@ def main():
             missing_cols = [col for col in required_cols if col not in df.columns]
             
             if missing_cols:
-                 st.error(f"""
-                 **Lỗi: Không tìm thấy các cột bắt buộc sau trong tệp của bạn:** {', '.join(missing_cols)}
-                 
-                 Vui lòng kiểm tra chính xác tên các cột: **Acctcd, Customer_No, Customer_Name, Cust_TypeCode, Birthday, Cust_DetailTypeCode**.
-                 """)
-                 return
+                st.error(f"""
+                **Lỗi: Không tìm thấy các cột bắt buộc sau trong tệp của bạn:** {', '.join(missing_cols)}
+                
+                Vui lòng kiểm tra chính xác tên các cột: **Acctcd, Customer_No, Customer_Name, Cust_TypeCode, Birthday, Cust_DetailTypeCode**.
+                """)
+                return
 
             df_filtered = df[required_cols].copy()
             
@@ -88,10 +89,8 @@ def main():
                 # --- CALCULATIONS ---
                 with st.spinner("Đang thực hiện tính toán..."):
                     
-                    # Tính tuổi cho toàn bộ DataFrame
-                    df_filtered['Age'] = df_filtered['Birthday'].apply(calculate_age)
-                    
                     # 1. Số lượng bản ghi mà khách hàng độ tuổi từ 15 trở lên
+                    df_filtered['Age'] = df_filtered['Birthday'].apply(calculate_age)
                     count_age_15_plus = df_filtered[df_filtered['Age'] >= 15].shape[0]
 
                     # 2. Số lượng tài khoản thanh toán của KHCN
@@ -103,20 +102,26 @@ def main():
                     count_khcn_payment = df_filtered[criteria_khcn_payment].shape[0]
                     
                     # 2.1. Tài khoản EKYC (Sub-item)
-                    # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode = 100 AND Cust_DetailTypeCode = 'Cá nhân EKYC'
+                    # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode = 100 AND Cust_DetailTypeCode = '104'
                     criteria_khcn_ekyc = (
                         criteria_khcn_payment & 
                         (df_filtered['Cust_DetailTypeCode'] == '104')
                     )
                     count_khcn_ekyc = df_filtered[criteria_khcn_ekyc].shape[0]
 
-                    # 3. Số lượng hồ sơ CIF KHTC (unique Customer_No)
+                    # 3. SỐ LƯỢNG HỒ SƠ CIF KHCN (UNIQUE) - ĐÃ BỔ SUNG
+                    # Tiêu chí: Cust_TypeCode = 100
+                    criteria_khcn_cif = (df_filtered['Cust_TypeCode'] == '100')
+                    # Đếm số lượng khách hàng duy nhất (Customer_No)
+                    count_khcn_cif = df_filtered[criteria_khcn_cif]['Customer_No'].nunique()
+                    
+                    # 4. Số lượng hồ sơ CIF KHTC (unique Customer_No) - TRƯỚC LÀ MỤC 3
                     # Tiêu chí: Cust_TypeCode khác 100
                     criteria_khtc_cif = (df_filtered['Cust_TypeCode'] != '100')
                     # Đếm số lượng khách hàng duy nhất (Customer_No)
                     count_khtc_cif = df_filtered[criteria_khtc_cif]['Customer_No'].nunique()
 
-                    # 4. Số lượng tài khoản thanh toán của KHTC
+                    # 5. Số lượng tài khoản thanh toán của KHTC - TRƯỚC LÀ MỤC 4
                     # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode khác 100
                     criteria_khtc_payment = (
                         (df_filtered['Acctcd'] == '421101') & 
@@ -133,13 +138,15 @@ def main():
                         "1. Khách hàng độ tuổi từ 15 trở lên (Bản ghi)",
                         "2. Tài khoản thanh toán của KHCN (Acctcd=421101 & Type=100)",
                         "2.1. Tài khoản EKYC (thuộc mục 2)",
-                        "3. Hồ sơ CIF KHTC (Cust_TypeCode ≠ 100) - UNIQUE",
-                        "4. Tài khoản thanh toán của KHTC (Acctcd=421101 & Type ≠ 100)"
+                        "3. Hồ sơ CIF KHCN (Cust_TypeCode = 100) - UNIQUE", # MỚI
+                        "4. Hồ sơ CIF KHTC (Cust_TypeCode ≠ 100) - UNIQUE", # ĐÃ CẬP NHẬT
+                        "5. Tài khoản thanh toán của KHTC (Acctcd=421101 & Type ≠ 100)" # ĐÃ CẬP NHẬT
                     ],
                     "Số Lượng Kết Quả": [
                         count_age_15_plus,
                         count_khcn_payment,
                         count_khcn_ekyc,
+                        count_khcn_cif, # KẾT QUẢ MỚI
                         count_khtc_cif,
                         count_khtc_payment
                     ]
@@ -164,9 +171,9 @@ def main():
                     )
                 with col3:
                     st.metric(
-                        label="3. Hồ sơ CIF KHTC (Duy nhất)", 
-                        value=f"{count_khtc_cif:,}",
-                        delta=f"TKTT KHTC: {count_khtc_payment:,} (Mục 4)"
+                        label="3. Hồ sơ CIF KHCN (Duy nhất)", # ĐÃ CẬP NHẬT
+                        value=f"{count_khcn_cif:,}",
+                        delta=f"KHTC CIF: {count_khtc_cif:,} (Mục 4)" # Kèm CIF KHTC
                     )
                     
                 st.markdown("---")
