@@ -89,9 +89,10 @@ def main():
                 # --- CALCULATIONS ---
                 with st.spinner("Đang thực hiện tính toán..."):
                     
-                    # 1. Số lượng bản ghi mà khách hàng độ tuổi từ 15 trở lên
+                    # 1. Số lượng KH duy nhất (Customer_No) độ tuổi từ 15 trở lên (UNIQUE)
+                    # Yêu cầu: Đếm số lượng hồ sơ khách hàng duy nhất (Customer_No)
                     df_filtered['Age'] = df_filtered['Birthday'].apply(calculate_age)
-                    count_age_15_plus = df_filtered[df_filtered['Age'] >= 15].shape[0]
+                    count_age_15_plus = df_filtered[df_filtered['Age'] >= 15]['Customer_No'].nunique()
 
                     # 2. Số lượng tài khoản thanh toán của KHCN
                     # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode = 100
@@ -109,19 +110,19 @@ def main():
                     )
                     count_khcn_ekyc = df_filtered[criteria_khcn_ekyc].shape[0]
 
-                    # 3. SỐ LƯỢNG HỒ SƠ CIF KHCN (UNIQUE) - ĐÃ BỔ SUNG
+                    # 3. SỐ LƯỢNG HỒ SƠ CIF KHCN (UNIQUE)
                     # Tiêu chí: Cust_TypeCode = 100
                     criteria_khcn_cif = (df_filtered['Cust_TypeCode'] == '100')
                     # Đếm số lượng khách hàng duy nhất (Customer_No)
                     count_khcn_cif = df_filtered[criteria_khcn_cif]['Customer_No'].nunique()
                     
-                    # 4. Số lượng hồ sơ CIF KHTC (unique Customer_No) - TRƯỚC LÀ MỤC 3
+                    # 4. Số lượng hồ sơ CIF KHTC (unique Customer_No) 
                     # Tiêu chí: Cust_TypeCode khác 100
                     criteria_khtc_cif = (df_filtered['Cust_TypeCode'] != '100')
                     # Đếm số lượng khách hàng duy nhất (Customer_No)
                     count_khtc_cif = df_filtered[criteria_khtc_cif]['Customer_No'].nunique()
 
-                    # 5. Số lượng tài khoản thanh toán của KHTC - TRƯỚC LÀ MỤC 4
+                    # 5. Số lượng tài khoản thanh toán của KHTC 
                     # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode khác 100
                     criteria_khtc_payment = (
                         (df_filtered['Acctcd'] == '421101') & 
@@ -135,18 +136,18 @@ def main():
                 # Chuẩn bị dữ liệu hiển thị chi tiết
                 results_data = {
                     "Chỉ Số Phân Tích": [
-                        "1. Khách hàng độ tuổi từ 15 trở lên (Bản ghi)",
+                        "1. Khách hàng độ tuổi từ 15 trở lên (UNIQUE Customer_No)", # ĐÃ CẬP NHẬT
                         "2. Tài khoản thanh toán của KHCN (Acctcd=421101 & Type=100)",
                         "2.1. Tài khoản EKYC (thuộc mục 2)",
-                        "3. Hồ sơ CIF KHCN (Cust_TypeCode = 100) - UNIQUE", # MỚI
-                        "4. Hồ sơ CIF KHTC (Cust_TypeCode ≠ 100) - UNIQUE", # ĐÃ CẬP NHẬT
-                        "5. Tài khoản thanh toán của KHTC (Acctcd=421101 & Type ≠ 100)" # ĐÃ CẬP NHẬT
+                        "3. Hồ sơ CIF KHCN (Cust_TypeCode = 100) - UNIQUE", 
+                        "4. Hồ sơ CIF KHTC (Cust_TypeCode ≠ 100) - UNIQUE", 
+                        "5. Tài khoản thanh toán của KHTC (Acctcd=421101 & Type ≠ 100)" 
                     ],
                     "Số Lượng Kết Quả": [
-                        count_age_15_plus,
+                        count_age_15_plus, 
                         count_khcn_payment,
                         count_khcn_ekyc,
-                        count_khcn_cif, # KẾT QUẢ MỚI
+                        count_khcn_cif, 
                         count_khtc_cif,
                         count_khtc_payment
                     ]
@@ -159,9 +160,9 @@ def main():
                 
                 with col1:
                     st.metric(
-                        label="1. KH Lớn hơn 15 tuổi", 
+                        label="1. KH Lớn hơn 15 tuổi (Duy nhất)", # ĐÃ CẬP NHẬT
                         value=f"{count_age_15_plus:,}",
-                        delta="Bản ghi"
+                        delta="Hồ sơ duy nhất" # ĐÃ CẬP NHẬT
                     )
                 with col2:
                     st.metric(
@@ -171,9 +172,9 @@ def main():
                     )
                 with col3:
                     st.metric(
-                        label="3. Hồ sơ CIF KHCN (Duy nhất)", # ĐÃ CẬP NHẬT
+                        label="3. Hồ sơ CIF KHCN (Duy nhất)", 
                         value=f"{count_khcn_cif:,}",
-                        delta=f"KHTC CIF: {count_khtc_cif:,} (Mục 4)" # Kèm CIF KHTC
+                        delta=f"KHTC CIF: {count_khtc_cif:,} (Mục 4)" 
                     )
                     
                 st.markdown("---")
