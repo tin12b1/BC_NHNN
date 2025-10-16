@@ -93,6 +93,9 @@ def main():
                     # Điều kiện chung cho tất cả các bản ghi: acc_st = 'Normal' (ĐANG HOẠT ĐỘNG)
                     active_accounts = (df_filtered['acc_st'] == 'Normal')
                     
+                    # Định nghĩa điều kiện cho TÀI KHOẢN THANH TOÁN (Acctcd = 421101 HOẶC 211108)
+                    payment_accounts = (df_filtered['Acctcd'] == '421101') | (df_filtered['Acctcd'] == '211108') # ĐÃ CHỈNH SỬA
+                    
                     # 1. Số lượng KH duy nhất (Customer_No) độ tuổi từ 15 trở lên (UNIQUE)
                     # Điều kiện: Age >= 15 AND acc_st = 'Normal'
                     df_filtered['Age'] = df_filtered['Birthday'].apply(calculate_age)
@@ -101,16 +104,16 @@ def main():
                     count_age_15_plus = df_filtered[criteria_age_15_plus]['Customer_No'].nunique()
 
                     # 2. Số lượng tài khoản thanh toán của KHCN
-                    # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode = 100 AND acc_st = 'Normal'
+                    # Tiêu chí: Payment Accounts AND Cust_TypeCode = 100 AND acc_st = 'Normal'
                     criteria_khcn_payment = (
-                        (df_filtered['Acctcd'] == '421101') & 
+                        payment_accounts & # ĐÃ CHỈNH SỬA
                         (df_filtered['Cust_TypeCode'] == '100') &
-                        active_accounts # BỔ SUNG ĐIỀU KIỆN
+                        active_accounts 
                     )
                     count_khcn_payment = df_filtered[criteria_khcn_payment].shape[0]
                     
                     # 2.1. Tài khoản EKYC (Sub-item)
-                    # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode = 100 AND Cust_DetailTypeCode = '104' AND acc_st = 'Normal'
+                    # Tiêu chí: Payment Accounts AND Cust_TypeCode = 100 AND Cust_DetailTypeCode = '104' AND acc_st = 'Normal'
                     criteria_khcn_ekyc = (
                         criteria_khcn_payment & 
                         (df_filtered['Cust_DetailTypeCode'] == '104')
@@ -118,38 +121,38 @@ def main():
                     count_khcn_ekyc = df_filtered[criteria_khcn_ekyc].shape[0]
 
                     # 3. SỐ LƯỢNG HỒ SƠ CIF KHCN (UNIQUE)
-                    # Tiêu chí: Cust_TypeCode = 100 AND acc_st = 'Normal' (Phải lấy unique trong các tài khoản Normal)
+                    # Tiêu chí: Cust_TypeCode = 100 AND acc_st = 'Normal' 
                     criteria_khcn_cif = (df_filtered['Cust_TypeCode'] == '100') & active_accounts
                     count_khcn_cif = df_filtered[criteria_khcn_cif]['Customer_No'].nunique()
                     
                     # 4. Số lượng hồ sơ CIF KHTC (unique Customer_No) 
-                    # Tiêu chí: Cust_TypeCode khác 100 AND acc_st = 'Normal' (Phải lấy unique trong các tài khoản Normal)
+                    # Tiêu chí: Cust_TypeCode khác 100 AND acc_st = 'Normal' 
                     criteria_khtc_cif = (df_filtered['Cust_TypeCode'] != '100') & active_accounts
                     count_khtc_cif = df_filtered[criteria_khtc_cif]['Customer_No'].nunique()
 
                     # 5. Số lượng tài khoản thanh toán của KHTC 
-                    # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode khác 100 AND acc_st = 'Normal'
+                    # Tiêu chí: Payment Accounts AND Cust_TypeCode khác 100 AND acc_st = 'Normal'
                     criteria_khtc_payment = (
-                        (df_filtered['Acctcd'] == '421101') & 
+                        payment_accounts & # ĐÃ CHỈNH SỬA
                         (df_filtered['Cust_TypeCode'] != '100') &
-                        active_accounts # BỔ SUNG ĐIỀU KIỆN
+                        active_accounts 
                     )
                     count_khtc_payment = df_filtered[criteria_khtc_payment].shape[0]
 
                 # --- DISPLAY RESULTS ---
                 st.subheader("🎉 Kết Quả Phân Tích")
-                st.info("Lưu ý: Tất cả các chỉ số dưới đây chỉ tính trên các tài khoản có **Trạng thái (acc_st) = Normal** (Đang hoạt động).")
+                st.info("Lưu ý: Tất cả các chỉ số dưới đây chỉ tính trên các tài khoản có **Trạng thái (acc_st) = Normal** (Đang hoạt động) và **Tài khoản thanh toán** bao gồm Acctcd **421101 hoặc 211108**.") # CẬP NHẬT GHI CHÚ
 
 
                 # Chuẩn bị dữ liệu hiển thị chi tiết
                 results_data = {
                     "Chỉ Số Phân Tích": [
                         "1. Khách hàng độ tuổi từ 15 trở lên (UNIQUE Customer_No)", 
-                        "2. Tài khoản thanh toán của KHCN (Acctcd=421101 & Type=100)",
+                        "2. Tài khoản thanh toán của KHCN (Acctcd=421101/211108 & Type=100)", # CẬP NHẬT TÊN
                         "2.1. Tài khoản EKYC (thuộc mục 2)",
                         "3. Hồ sơ CIF KHCN (Cust_TypeCode = 100) - UNIQUE", 
                         "4. Hồ sơ CIF KHTC (Cust_TypeCode ≠ 100) - UNIQUE", 
-                        "5. Tài khoản thanh toán của KHTC (Acctcd=421101 & Type ≠ 100)" 
+                        "5. Tài khoản thanh toán của KHTC (Acctcd=421101/211108 & Type ≠ 100)" # CẬP NHẬT TÊN
                     ],
                     "Số Lượng Kết Quả": [
                         count_age_15_plus, 
@@ -174,7 +177,7 @@ def main():
                     )
                 with col2:
                     st.metric(
-                        label="2. TKTT KHCN", 
+                        label="2. TKTT KHCN (421101/211108)", # CẬP NHẬT TÊN
                         value=f"{count_khcn_payment:,}",
                         delta=f"Trong đó EKYC: {count_khcn_ekyc:,}"
                     )
