@@ -106,7 +106,7 @@ def main():
                     # Tiêu chí: Acctcd = 421101 AND Cust_TypeCode = 100 AND Cust_DetailTypeCode = 'Cá nhân EKYC'
                     criteria_khcn_ekyc = (
                         criteria_khcn_payment & 
-                        (df_filtered['Cust_DetailTypeCode'] == 'Cá nhân EKYC')
+                        (df_filtered['Cust_DetailTypeCode'] == '104')
                     )
                     count_khcn_ekyc = df_filtered[criteria_khcn_ekyc].shape[0]
 
